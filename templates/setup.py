@@ -1,0 +1,21 @@
+from setuptools import setup, find_packages
+
+setup(
+    name="blood-concentration-predictor",
+    version="1.0.0",
+    packages=find_packages(),
+    install_requires=[
+        "flask==2.3.3",
+        "numpy==1.24.3",
+        "pandas==2.0.3",
+        "scikit-learn==1.2.2",
+        "joblib==1.2.0",
+        "werkzeug==2.3.7",
+        "jinja2==3.1.2",
+        "click==8.1.7",
+        "itsdangerous==2.1.2",
+        "blinker==1.6.2",
+        "markupsafe==2.1.3"
+    ],
+    python_requires=">=3.10",
+)
