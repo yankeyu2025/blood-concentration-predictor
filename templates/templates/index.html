@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <!-- 左侧：输入表单 -->
+    <div class="col-lg-8">
+        <div class="feature-card">
+            <h3 class="mb-4">
+                <i class="fas fa-clipboard-list text-primary"></i> 
+                患者信息输入
+            </h3>
+            
+            <form id="predictionForm" method="POST" action="{{ url_for('predict') }}">
+                <div class="row">
+                    <!-- 日剂量 -->
+                    <div class="col-md-6 mb-3">
+                        <label for="daily_dose" class="form-label">
+                            <i class="fas fa-pills text-info"></i> 日剂量 (g)
+                        </label>
+                        <input type="number" 
+                               class="form-control" 
+                               id="daily_dose" 
+                               name="daily_dose" 
+                               step="0.01" 
+                               min="0" 
+                               max="10"
+                               required>
+                        <div class="feature-info">
+                            <i class="fas fa-info-circle"></i> 
+                            患者每日服用的药物总剂量，通常范围：0.1-5.0g
+                        </div>
+                    </div>
+                    
+                    <!-- 肌酐清除率 -->
+                    <div class="col-md-6 mb-3">
+                        <label for="clcr" class="form-label">
+                            <i class="fas fa-kidney text-warning"></i> 肌酐清除率 (mL/min)
+                        </label>
+                        <input type="number" 
+                               class="form-control" 
+                               id="clcr" 
+                               name="clcr" 
+                               step="0.1" 
+                               min="0" 
+                               max="200"
+                               required>
+                        <div class="feature-info">
+                            <i class="fas fa-info-circle"></i> 
+                            肾功能指标，正常范围：80-120 mL/min
+                        </div>
+                    </div>
+                    
+                    <!-- 谷氨酰转肽酶 -->
+                    <div class="col-md-6 mb-3">
+                        <label for="ggt" class="form-label">
+                            <i class="fas fa-liver text-success"></i> GGT (U/L)
+                        </label>
+                        <input type="number" 
+                               class="form-control" 
+                               id="ggt" 
+                               name="ggt" 
+                               step="0.1" 
+                               min="0" 
+                               max="500"
+                               required>
+                        <div class="feature-info">
+                            <i class="fas fa-info-circle"></i> 
+                            肝功能指标，正常范围：男性 ≤50 U/L，女性 ≤32 U/L
+                        </div>
+                    </div>
+                    
+                    <!-- 血钠 -->
+                    <div class="col-md-6 mb-3">
+                        <label for="na" class="form-label">
+                            <i class="fas fa-tint text-primary"></i> 血钠 (mmol/L)
+                        </label>
+                        <input type="number" 
+                               class="form-control" 
+                               id="na" 
+                               name="na" 
+                               step="0.1" 
+                               min="120" 
+                               max="160"
+                               required>
+                        <div class="feature-info">
+                            <i class="fas fa-info-circle"></i> 
+                            电解质平衡指标，正常范围：136-145 mmol/L
+                        </div>
+                    </div>
+                    
+                    <!-- 高密度脂蛋白胆固醇 -->
+                    <div class="col-md-6 mb-3">
+                        <label for="hdl_c" class="form-label">
+                            <i class="fas fa-heart text-danger"></i> HDL-C (mmol/L)
+                        </label>
+                        <input type="number" 
+                               class="form-control" 
+                               id="hdl_c" 
+                               name="hdl_c" 
+                               step="0.01" 
+                               min="0" 
+                               max="5"
+                               required>
+                        <div class="feature-info">
+                            <i class="fas fa-info-circle"></i> 
+                            "好胆固醇"，正常范围：男性 >1.0，女性 >1.3 mmol/L
+                        </div>
+                    </div>
+                    
+                    <!-- 白蛋白 -->
+                    <div class="col-md-6 mb-3">
+                        <label for="alb" class="form-label">
+                            <i class="fas fa-flask text-secondary"></i> 白蛋白 (g/L)
+                        </label>
+                        <input type="number" 
+                               class="form-control" 
+                               id="alb" 
+                               name="alb" 
+                               step="0.1" 
+                               min="20" 
+                               max="60"
+                               required>
+                        <div class="feature-info">
+                            <i class="fas fa-info-circle"></i> 
+                            营养状态和肝功能指标，正常范围：35-50 g/L
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg" id="predictBtn">
+                        <span class="normal-text">
+                            <i class="fas fa-brain"></i> 开始预测
+                        </span>
+                        <span class="loading">
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                            预测中...
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 右侧：说明信息 -->
+    <div class="col-lg-4">
+        <div class="feature-card">
+            <h4 class="mb-3">
+                <i class="fas fa-info-circle text-info"></i> 
+                使用说明
+            </h4>
+            
+            <div class="alert alert-info">
+                <h6><i class="fas fa-target"></i> 预测目标</h6>
+                <p class="mb-0">评估患者血药浓度是否存在异常风险</p>
+            </div>
+            
+            <div class="alert alert-warning">
+                <h6><i class="fas fa-exclamation-triangle"></i> 重要提醒</h6>
+                <ul class="mb-0">
+                    <li>本系统仅供临床参考，不能替代医生判断</li>
+                    <li>请确保输入数据的准确性</li>
+                    <li>异常结果需结合临床实际情况分析</li>
+                </ul>
+            </div>
+            
+            <div class="alert alert-success">
+                <h6><i class="fas fa-chart-bar"></i> 模型性能</h6>
+                <ul class="mb-0">
+                    <li>准确率：86.7%</li>
+                    <li>AUC值：0.888</li>
+                    <li>基于6个关键临床特征</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="feature-card">
+            <h4 class="mb-3">
+                <i class="fas fa-stethoscope text-success"></i> 
+                临床指导
+            </h4>
+            
+            <div class="accordion" id="clinicalGuide">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#kidney">
+                            肾功能评估
+                        </button>
+                    </h2>
+                    <div id="kidney" class="accordion-collapse collapse" data-bs-parent="#clinicalGuide">
+                        <div class="accordion-body">
+                            <strong>肌酐清除率 (CLCR)</strong><br>
+                            • 正常：80-120 mL/min<br>
+                            • 轻度损害：60-80 mL/min<br>
+                            • 中度损害：30-60 mL/min<br>
+                            • 重度损害：<30 mL/min
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#liver">
+                            肝功能评估
+                        </button>
+                    </h2>
+                    <div id="liver" class="accordion-collapse collapse" data-bs-parent="#clinicalGuide">
+                        <div class="accordion-body">
+                            <strong>GGT 参考范围</strong><br>
+                            • 男性：≤50 U/L<br>
+                            • 女性：≤32 U/L<br>
+                            • 升高提示肝胆疾病或药物性肝损害
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#electrolyte">
+                            电解质平衡
+                        </button>
+                    </h2>
+                    <div id="electrolyte" class="accordion-collapse collapse" data-bs-parent="#clinicalGuide">
+                        <div class="accordion-body">
+                            <strong>血钠正常范围</strong><br>
+                            • 136-145 mmol/L<br>
+                            • 低钠血症：<136 mmol/L<br>
+                            • 高钠血症：>145 mmol/L
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('predictionForm').addEventListener('submit', function(e) {
+    const btn = document.getElementById('predictBtn');
+    const normalText = btn.querySelector('.normal-text');
+    const loadingText = btn.querySelector('.loading');
+    
+    // 显示加载状态
+    normalText.style.display = 'none';
+    loadingText.style.display = 'inline';
+    btn.disabled = true;
+    
+    // 表单验证
+    const inputs = this.querySelectorAll('input[required]');
+    let isValid = true;
+    
+    inputs.forEach(input => {
+        if (!input.value || input.value === '') {
+            isValid = false;
+            input.classList.add('is-invalid');
+        } else {
+            input.classList.remove('is-invalid');
+        }
+    });
+    
+    if (!isValid) {
+        e.preventDefault();
+        // 恢复按钮状态
+        normalText.style.display = 'inline';
+        loadingText.style.display = 'none';
+        btn.disabled = false;
+        
+        alert('请填写所有必填字段！');
+    }
+});
+
+// 输入验证
+document.querySelectorAll('input[type="number"]').forEach(input => {
+    input.addEventListener('input', function() {
+        this.classList.remove('is-invalid');
+        
+        // 范围验证
+        const min = parseFloat(this.min);
+        const max = parseFloat(this.max);
+        const value = parseFloat(this.value);
+        
+        if (this.value && (value < min || value > max)) {
+            this.classList.add('is-invalid');
+        }
+    });
+});
+</script>
+{% endblock %}
