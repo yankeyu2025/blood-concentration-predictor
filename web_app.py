@@ -20,10 +20,10 @@ app.secret_key = 'blood_concentration_predictor_2024'
 # 配置路径
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
-# 处理Render环境的路径问题
-if os.path.exists('/opt/render/project/src'):
-    # Render环境，模型文件在src目录下
-    MODEL_DIR = '/opt/render/project/src/web_models'
+# 处理Render环境的路径问题 - 修正路径检测逻辑
+if '/opt/render/project/src' in BASE_DIR:
+    # Render环境，工作目录在src下，但模型文件在上级目录
+    MODEL_DIR = '/opt/render/project/web_models'
 else:
     # 本地环境或其他环境
     MODEL_DIR = os.path.join(BASE_DIR, 'web_models')
