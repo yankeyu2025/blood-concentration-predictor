@@ -1,6 +1,7 @@
-Flask==2.0.3
-numpy==1.21.0
-pandas==1.3.5
-scikit-learn==1.0.2
-joblib==1.0.1
-gunicorn==20.1.0
+Flask==2.3.3          # 从2.0.3升级
+numpy==1.24.3          # 从1.21.0升级  
+pandas==2.0.3          # 从1.3.5升级
+scikit-learn==1.3.0    # 从1.0.2升级
+joblib==1.3.2          # 从1.0.1升级
+gunicorn==21.2.0       # 从20.1.0升级
+setuptools==68.2.2     # 新增，显式指定版本
