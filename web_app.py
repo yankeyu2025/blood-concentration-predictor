@@ -19,7 +19,14 @@ app.secret_key = 'blood_concentration_predictor_2024'
 
 # 配置路径
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-MODEL_DIR = os.path.join(BASE_DIR, 'web_models')
+
+# 处理Render环境的路径问题
+if os.path.exists('/opt/render/project/src'):
+    # Render环境，模型文件在src目录下
+    MODEL_DIR = '/opt/render/project/src/web_models'
+else:
+    # 本地环境或其他环境
+    MODEL_DIR = os.path.join(BASE_DIR, 'web_models')
 
 # 全局变量存储模型
 model = None
@@ -31,16 +38,44 @@ def load_model_components():
     global model, scaler, metadata
     
     try:
+        # 打印调试信息
+        logger.info(f"当前工作目录: {os.getcwd()}")
+        logger.info(f"BASE_DIR: {BASE_DIR}")
+        logger.info(f"MODEL_DIR: {MODEL_DIR}")
+        logger.info(f"模型目录是否存在: {os.path.exists(MODEL_DIR)}")
+        
+        if os.path.exists(MODEL_DIR):
+            logger.info(f"模型目录内容: {os.listdir(MODEL_DIR)}")
+        
+        # 尝试多个可能的路径
+        possible_paths = [
+            MODEL_DIR,
+            os.path.join(BASE_DIR, 'web_models'),
+            '/opt/render/project/web_models',
+            '/opt/render/project/src/web_models'
+        ]
+        
+        model_path = None
+        for path in possible_paths:
+            model_file = os.path.join(path, 'logistic_regression_model.pkl')
+            if os.path.exists(model_file):
+                model_path = path
+                logger.info(f"找到模型文件路径: {model_path}")
+                break
+        
+        if not model_path:
+            raise FileNotFoundError("无法找到模型文件")
+        
         # 加载模型
-        with open(os.path.join(MODEL_DIR, 'logistic_regression_model.pkl'), 'rb') as f:
+        with open(os.path.join(model_path, 'logistic_regression_model.pkl'), 'rb') as f:
             model = pickle.load(f)
         
         # 加载标准化器
-        with open(os.path.join(MODEL_DIR, 'feature_scaler.pkl'), 'rb') as f:
+        with open(os.path.join(model_path, 'feature_scaler.pkl'), 'rb') as f:
             scaler = pickle.load(f)
         
         # 加载元数据
-        with open(os.path.join(MODEL_DIR, 'model_metadata.json'), 'r', encoding='utf-8') as f:
+        with open(os.path.join(model_path, 'model_metadata.json'), 'r', encoding='utf-8') as f:
             metadata = json.load(f)
         
         logger.info("模型组件加载成功")
