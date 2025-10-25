@@ -243,7 +243,9 @@ def get_language():
         session['language'] = lang
         return lang
     
-    # 其次从session获取，默认为英文
+    # 清除可能存在的中文session，默认为英文
+    if 'language' in session and session['language'] == 'zh':
+        session.pop('language', None)
     return session.get('language', 'en')
 
 def get_text(key):
@@ -356,10 +358,6 @@ def index():
     """主页"""
     if not metadata:
         return render_template('error.html', error="模型未正确加载，请联系管理员")
-    
-    # 设置默认语言为英文
-    if 'language' not in session:
-        session['language'] = 'en'
     
     return render_template('index.html', 
                          features=metadata['features'],
