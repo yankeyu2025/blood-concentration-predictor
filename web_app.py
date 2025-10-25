@@ -502,27 +502,27 @@ def predict():
         result = {
             'prediction': int(prediction),
             'probability': float(probability),
-            'prediction_text': 'High' if prediction == 1 else 'Normal',
+            'prediction_text': 'Low Blood Drug Concentration (< 0.5)' if prediction == 1 else 'Normal Blood Drug Concentration (≥ 0.5)',
             'input_data': data
         }
         
         logger.info(f"Interpreted result: {result}")
         
         # Add clinical recommendations
-        if prediction == 1:  # High risk
+        if prediction == 1:  # Low blood drug concentration (< 0.5)
             if probability > 0.8:
-                result['recommendation'] = "Very high risk of elevated blood drug concentration, recommend immediate dosage adjustment and close monitoring"
+                result['recommendation'] = "Very high risk of low blood drug concentration (< 0.5), recommend immediate dosage increase and close monitoring"
             elif probability > 0.6:
-                result['recommendation'] = "High risk of elevated blood drug concentration, recommend considering dosage adjustment"
+                result['recommendation'] = "High risk of low blood drug concentration (< 0.5), recommend considering dosage increase"
             else:
-                result['recommendation'] = "Moderate risk of elevated blood drug concentration, recommend enhanced monitoring"
-        else:  # Low risk
+                result['recommendation'] = "Moderate risk of low blood drug concentration (< 0.5), recommend enhanced monitoring"
+        else:  # Normal blood drug concentration (≥ 0.5)
             if probability < 0.2:
-                result['recommendation'] = "Normal blood drug concentration, current medication regimen is appropriate"
+                result['recommendation'] = "Blood drug concentration is in normal range (≥ 0.5), current medication regimen is appropriate"
             elif probability < 0.4:
-                result['recommendation'] = "Blood drug concentration is basically normal, can continue current medication regimen"
+                result['recommendation'] = "Blood drug concentration is basically normal (≥ 0.5), can continue current medication regimen"
             else:
-                result['recommendation'] = "Blood drug concentration is close to threshold, recommend regular monitoring"
+                result['recommendation'] = "Blood drug concentration is close to low threshold, recommend regular monitoring"
         
         logger.info(f"Prediction completed: {result}")
         
