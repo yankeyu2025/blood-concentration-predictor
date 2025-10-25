@@ -44,7 +44,7 @@ LANGUAGES = {
         'name': 'Chinese',
         'title': 'Blood Drug Concentration Prediction System',
         'subtitle': 'Intelligent blood drug concentration abnormal risk prediction based on machine learning',
-        'model_accuracy': '模型准确率: 86.7%',
+        'model_accuracy': 'Model Accuracy: 86.7%',
         'patient_info': 'Patient Information Input',
         'usage_instructions': 'Usage Instructions',
         'predict_button': 'Start Prediction',
@@ -137,7 +137,11 @@ LANGUAGES = {
         'hyponatremia': 'Hyponatremia',
         'hypernatremia': 'Hypernatremia',
         'mild_deficiency': 'Mild Deficiency',
-        'significant_deficiency': 'Significant Deficiency'
+        'significant_deficiency': 'Significant Deficiency',
+        # 新增：将模板中的中文硬编码改为可翻译文本
+        'kidney_guide_content': '<strong>Creatinine Clearance (CLCR)</strong><br>• Normal: 80-120 mL/min<br>• Mild impairment: 60-80 mL/min<br>• Moderate impairment: 30-60 mL/min<br>• Severe impairment: <30 mL/min',
+        'liver_ggt_guide_content': '<strong>GGT reference range</strong><br>• Male: ≤50 U/L<br>• Female: ≤32 U/L<br>• Elevation suggests hepatobiliary disease or drug-induced liver injury',
+        'sodium_guide_content': '<strong>Sodium normal range</strong><br>• 136-145 mmol/L<br>• Hyponatremia: <136 mmol/L<br>• Hypernatremia: >145 mmol/L'
     },
     'en': {
         'name': 'English',
@@ -236,20 +240,17 @@ LANGUAGES = {
         'hyponatremia': 'Hyponatremia',
         'hypernatremia': 'Hypernatremia',
         'mild_deficiency': 'Mild Deficiency',
-        'significant_deficiency': 'Significant Deficiency'
+        'significant_deficiency': 'Significant Deficiency',
+        # 新增：可翻译文本用于替换模板中文
+        'kidney_guide_content': '<strong>Creatinine Clearance (CLCR)</strong><br>• Normal: 80-120 mL/min<br>• Mild impairment: 60-80 mL/min<br>• Moderate impairment: 30-60 mL/min<br>• Severe impairment: <30 mL/min',
+        'liver_ggt_guide_content': '<strong>GGT reference range</strong><br>• Male: ≤50 U/L<br>• Female: ≤32 U/L<br>• Elevation suggests hepatobiliary disease or drug-induced liver injury',
+        'sodium_guide_content': '<strong>Sodium normal range</strong><br>• 136-145 mmol/L<br>• Hyponatremia: <136 mmol/L<br>• Hypernatremia: >145 mmol/L'
     }
 }
 
 def get_language():
-    """Get current language setting, prioritize URL parameters"""
-    # Priority from URL parameters
-    lang = request.args.get('lang')
-    if lang and lang in LANGUAGES:
-        session['language'] = lang
-        return lang
-    
-    # Default to English if no language is set
-    return session.get('language', 'en')
+    """Force English language"""
+    return 'en'
 
 def get_texts():
     """Get text for current language"""
@@ -537,5 +538,4 @@ if __name__ == '__main__':
         app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
     else:
         print("❌ Model loading failed, unable to start application")
-        print("Please ensure model files exist in the web_models directory")
-        sys.exit(1)
+        print("Plea
