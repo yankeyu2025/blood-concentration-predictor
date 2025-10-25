@@ -383,10 +383,16 @@ def index():
     texts = get_texts()
     current_lang = get_language()
     
+    # Get performance data from metadata
+    performance_data = None
+    if metadata and 'performance' in metadata:
+        performance_data = metadata['performance']
+    
     return render_template('index.html', 
                          texts=texts,
                          current_lang=current_lang,
-                         languages=LANGUAGES)
+                         languages=LANGUAGES,
+                         performance=performance_data)
 
 @app.route('/set_language/<lang>')
 def set_language(lang):
@@ -549,9 +555,3 @@ if __name__ == '__main__':
         print(f"🔧 Features Used: {', '.join(metadata['features'])}")
         print("🌐 Access URL: http://localhost:5000")
         
-        # Start Flask application
-        app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
-    else:
-        print("❌ Model loading failed, unable to start application")
-        print("Please ensure model files exist in the web_models directory")
-        sys.exit(1)
