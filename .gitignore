@@ -123,3 +123,8 @@ Thumbs.db
 重新跑全流程_可配置.py
 优化三分类模型.py
 保存最优模型.py
+
+# Test and debug files (local only)
+test_*.py
+debug_*.py
+debug_*.html
