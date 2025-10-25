@@ -42,8 +42,8 @@ metadata = None
 LANGUAGES = {
     'zh': {
         'name': 'Chinese',
-        'title': '血药浓度预测系统',
-        'subtitle': '基于机器学习的智能血药浓度异常风险预测',
+        'title': 'Blood Drug Concentration Prediction System',
+        'subtitle': 'Intelligent blood drug concentration abnormal risk prediction based on machine learning',
         'model_accuracy': '模型准确率: 86.7%',
         'patient_info': 'Patient Information Input',
         'usage_instructions': 'Usage Instructions',
