@@ -555,6 +555,57 @@ def model_info():
     if not metadata:
         return jsonify({'error': 'Model not loaded'}), 500
     
-    return jsonify({
+   return jsonify({
         'model_type': metadata.get('model_type', 'Logistic Regression'),
+        'features': metadata.get('features', []),
+        'performance': metadata.get('performance', {}),
+        'training_date': metadata.get('training_date', 'Unknown'),
+        'version': metadata.get('version', '1.0')
+    })
+
+@app.route('/health')
+def health_check():
+    """Health check"""
+    return jsonify({
+        'status': 'healthy',
+        'model_loaded': model is not None,
+        'scaler_loaded': scaler is not None,
+        'metadata_loaded': metadata is not None
+    })
+
+@app.errorhandler(404)
+def not_found_error(error):
+    current_lang = get_language()
+    return render_template('error.html', 
+                         error="Page Not Found" if current_lang == 'en' else "Page Not Found",
+                         texts=get_texts(),
+                         current_lang=current_lang,
+                         languages=LANGUAGES), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    current_lang = get_language()
+    return render_template('error.html', 
+                         error="Internal Server Error" if current_lang == 'en' else "Internal Server Error",
+                         texts=get_texts(),
+                         current_lang=current_lang,
+                         languages=LANGUAGES), 500
+
+if __name__ == '__main__':
+    # Load model at startup
+    if load_model():
+        print("🚀 Blood Drug Concentration Prediction Web Application Started Successfully!")
+        print(f"📊 Model Performance: Accuracy {metadata['performance']['accuracy']:.3f}, AUC {metadata['performance']['auc']:.3f}")
+        print(f"🔧 Features Used: {', '.join(metadata['features'])}")
+        
+        # Get port from environment variable (for Render deployment)
+        port = int(os.environ.get('PORT', 5000))
+        print(f"🌐 Access URL: http://localhost:{port}")
+        
+        # Run with production settings for Render
+        app.run(host='0.0.0.0', port=port, debug=False)
+    else:
+        print("❌ Model loading failed, unable to start application")
+        print("Please ensure model files exist in the web_models directory")
+        sys.exit(1)
         
