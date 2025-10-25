@@ -249,9 +249,19 @@ LANGUAGES = {
 }
 
 def get_language():
-    """Get current language setting, force English"""
-    # Force English only
-    return 'en'
+    """Get current language setting"""
+    # Check URL parameter first
+    lang = request.args.get('lang')
+    if lang and lang in LANGUAGES:
+        session['language'] = lang
+        return lang
+    
+    # Check session
+    if 'language' in session and session['language'] in LANGUAGES:
+        return session['language']
+    
+    # Default to Chinese
+    return 'zh'
 
 def get_texts():
     """Get text for current language"""
