@@ -375,7 +375,8 @@ def index():
     
     return render_template('index.html', 
                          texts=texts,
-                         current_lang=current_lang)
+                         current_lang=current_lang,
+                         languages=LANGUAGES)
 
 @app.route('/set_language/<lang>')
 def set_language(lang):
