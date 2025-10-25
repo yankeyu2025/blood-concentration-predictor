@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Blood Drug Concentration Prediction Web Application
 Binary classification prediction system based on logistic regression model
@@ -555,7 +556,7 @@ def model_info():
     if not metadata:
         return jsonify({'error': 'Model not loaded'}), 500
     
-   return jsonify({
+    return jsonify({
         'model_type': metadata.get('model_type', 'Logistic Regression'),
         'features': metadata.get('features', []),
         'performance': metadata.get('performance', {}),
@@ -608,4 +609,3 @@ if __name__ == '__main__':
         print("❌ Model loading failed, unable to start application")
         print("Please ensure model files exist in the web_models directory")
         sys.exit(1)
-        
