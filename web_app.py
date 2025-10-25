@@ -248,8 +248,8 @@ def get_language():
         session['language'] = lang
         return lang
     
-    # Default to Chinese if no language is set
-    return session.get('language', 'zh')
+    # Default to English if no language is set
+    return session.get('language', 'en')
 
 def get_texts():
     """Get text for current language"""
