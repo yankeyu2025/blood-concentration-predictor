@@ -138,6 +138,17 @@ LANGUAGES = {
         'hypernatremia': '高钠血症',
         'mild_deficiency': '轻度不足',
         'significant_deficiency': '显著不足',
+        # result.html 模板中使用的变量
+        'monitor_drug_concentration': '建议进行血药浓度监测',
+        'observe_adverse_reactions': '密切观察不良反应',
+        'assess_organ_function': '评估肾脏和肝脏功能状态',
+        'after_dose_adjustment': '剂量调整后：3-5天复查',
+        'continue_current_treatment': '继续当前治疗方案',
+        'regular_follow_up': '定期随访监测',
+        'observe_clinical_symptoms': '注意观察临床症状',
+        'follow_up_advice': '随访建议',
+        'regular_organ_assessment': '定期评估肾脏和肝脏功能',
+        'nutritional_status': '营养状态',
         # 新增：将模板中的中文硬编码改为可翻译文本
         'kidney_guide_content': '<strong>肌酐清除率 (CLCR)</strong><br>• 正常：80-120 mL/min<br>• 轻度损害：60-80 mL/min<br>• 中度损害：30-60 mL/min<br>• 重度损害：<30 mL/min',
         'liver_ggt_guide_content': '<strong>GGT参考范围</strong><br>• 男性：≤50 U/L<br>• 女性：≤32 U/L<br>• 升高提示肝胆疾病或药物性肝损伤',
@@ -241,6 +252,17 @@ LANGUAGES = {
         'hypernatremia': 'Hypernatremia',
         'mild_deficiency': 'Mild Deficiency',
         'significant_deficiency': 'Significant Deficiency',
+        # result.html 模板中使用的变量
+        'monitor_drug_concentration': 'Recommend blood drug concentration monitoring',
+        'observe_adverse_reactions': 'Monitor closely for adverse reactions',
+        'assess_organ_function': 'Assess kidney and liver function status',
+        'after_dose_adjustment': 'After dose adjustment: Recheck in 3-5 days',
+        'continue_current_treatment': 'Continue current treatment plan',
+        'regular_follow_up': 'Regular follow-up monitoring',
+        'observe_clinical_symptoms': 'Pay attention to clinical symptoms',
+        'follow_up_advice': 'Follow-up Advice',
+        'regular_organ_assessment': 'Regular assessment of kidney and liver function',
+        'nutritional_status': 'Nutritional Status',
         # 新增：可翻译文本用于替换模板中文
         'kidney_guide_content': '<strong>Creatinine Clearance (CLCR)</strong><br>• Normal: 80-120 mL/min<br>• Mild impairment: 60-80 mL/min<br>• Moderate impairment: 30-60 mL/min<br>• Severe impairment: <30 mL/min',
         'liver_ggt_guide_content': '<strong>GGT reference range</strong><br>• Male: ≤50 U/L<br>• Female: ≤32 U/L<br>• Elevation suggests hepatobiliary disease or drug-induced liver injury',
@@ -429,37 +451,51 @@ def set_language(lang):
 def predict():
     """Prediction interface"""
     try:
+        logger.info("Starting prediction process...")
+        
         # Get input data
         data = {
-            'Daily dose（g）': request.form.get('daily_dose'),
-            'CLCR': request.form.get('clcr'),
-            'GGT(U/L)': request.form.get('ggt'),
-            'Na(mmol/L)': request.form.get('sodium'),
-            'HDL-C(mmol/L)': request.form.get('hdl'),
-            'ALB(g/L)': request.form.get('albumin')
+            'Daily dose（g）': request.form.get('Daily dose（g）'),
+            'CLCR': request.form.get('CLCR'),
+            'GGT(U/L)': request.form.get('GGT(U/L)'),
+            'Na(mmol/L)': request.form.get('Na(mmol/L)'),
+            'HDL-C(mmol/L)': request.form.get('HDL-C(mmol/L)'),
+            'ALB(g/L)': request.form.get('ALB(g/L)')
         }
+        
+        logger.info(f"Received input data: {data}")
         
         # Validate input
         errors = validate_input(data)
         if errors:
+            logger.warning(f"Input validation failed: {errors}")
             texts = get_texts()
             return render_template('index.html', 
                                  texts=texts,
                                  current_lang=get_language(),
+                                 languages=LANGUAGES,
+                                 performance=metadata.get('performance', {}) if metadata else {},
                                  errors=errors,
                                  form_data=data)
+        
+        logger.info("Input validation passed, preparing prediction data...")
         
         # Prepare prediction data
         input_data = pd.DataFrame([{
             feature: float(data[feature]) for feature in data.keys()
         }])
         
+        logger.info(f"Created DataFrame: {input_data}")
+        
         # Standardize
         input_scaled = scaler.transform(input_data)
+        logger.info(f"Data standardized, shape: {input_scaled.shape}")
         
         # Predict
         prediction = model.predict(input_scaled)[0]
         probability = model.predict_proba(input_scaled)[0][1]
+        
+        logger.info(f"Raw prediction: {prediction}, probability: {probability}")
         
         # Interpret results
         result = {
@@ -468,6 +504,8 @@ def predict():
             'prediction_text': 'High' if prediction == 1 else 'Normal',
             'input_data': data
         }
+        
+        logger.info(f"Interpreted result: {result}")
         
         # Add clinical recommendations
         if prediction == 1:  # High risk
@@ -490,18 +528,24 @@ def predict():
         texts = get_texts()
         current_lang = get_language()
         
+        logger.info(f"Rendering result.html with texts keys: {list(texts.keys())[:10]}...")
+        
         return render_template('result.html',
                              texts=texts,
                              current_lang=current_lang,
+                             languages=LANGUAGES,
                              result=result)
         
     except Exception as e:
         logger.error(f"Prediction error: {e}")
         error_msg = "Error occurred during prediction, please check input data"
         texts = get_texts()
+        current_lang = get_language()
         return render_template('index.html', 
                              texts=texts,
-                             current_lang=get_language(),
+                             current_lang=current_lang,
+                             languages=LANGUAGES,
+                             performance=metadata.get('performance', {}) if metadata else {},
                              errors=[error_msg],
                              form_data=data if 'data' in locals() else {})
 
@@ -513,45 +557,4 @@ def model_info():
     
     return jsonify({
         'model_type': metadata.get('model_type', 'Logistic Regression'),
-        'features': metadata.get('features', []),
-        'performance': metadata.get('performance', {}),
-        'training_date': metadata.get('training_date', 'Unknown'),
-        'version': metadata.get('version', '1.0')
-    })
-
-@app.route('/health')
-def health_check():
-    """Health check"""
-    return jsonify({
-        'status': 'healthy',
-        'model_loaded': model is not None,
-        'scaler_loaded': scaler is not None,
-        'metadata_loaded': metadata is not None
-    })
-
-@app.errorhandler(404)
-def not_found_error(error):
-    current_lang = get_language()
-    return render_template('error.html', 
-                         error="Page Not Found" if current_lang == 'en' else "Page Not Found",
-                         texts=get_texts(),
-                         current_lang=current_lang,
-                         languages=LANGUAGES), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    current_lang = get_language()
-    return render_template('error.html', 
-                         error="Internal Server Error" if current_lang == 'en' else "Internal Server Error",
-                         texts=get_texts(),
-                         current_lang=current_lang,
-                         languages=LANGUAGES), 500
-
-if __name__ == '__main__':
-    # Load model at startup
-    if load_model():
-        print("🚀 Blood Drug Concentration Prediction Web Application Started Successfully!")
-        print(f"📊 Model Performance: Accuracy {metadata['performance']['accuracy']:.3f}, AUC {metadata['performance']['auc']:.3f}")
-        print(f"🔧 Features Used: {', '.join(metadata['features'])}")
-        print("🌐 Access URL: http://localhost:5000")
         
