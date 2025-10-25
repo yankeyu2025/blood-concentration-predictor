@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="row">
-    <!-- 左侧：输入表单 -->
+    <!-- Left Side: Input Form -->
     <div class="col-lg-8">
         <div class="feature-card">
             <h3 class="mb-4">
@@ -12,7 +12,7 @@
             
             <form id="predictionForm" method="POST" action="{{ url_for('predict') }}">
                 <div class="row">
-                    <!-- 日剂量 -->
+                    <!-- Daily Dose -->
                     <div class="col-md-6 mb-3">
                         <label for="daily_dose" class="form-label">
                             <i class="fas fa-pills text-info"></i> {{ texts.daily_dose }}
@@ -31,7 +31,7 @@
                         </div>
                     </div>
                     
-                    <!-- 肌酐清除率 -->
+                    <!-- Creatinine Clearance -->
                     <div class="col-md-6 mb-3">
                         <label for="clcr" class="form-label">
                             <i class="fas fa-kidney text-warning"></i> {{ texts.clcr }}
@@ -69,7 +69,7 @@
                         </div>
                     </div>
                     
-                    <!-- 血钠 -->
+                    <!-- Sodium -->
                     <div class="col-md-6 mb-3">
                         <label for="sodium" class="form-label">
                             <i class="fas fa-tint text-primary"></i> {{ texts.sodium }}
@@ -107,7 +107,7 @@
                         </div>
                     </div>
                     
-                    <!-- 白蛋白 -->
+                    <!-- Albumin -->
                     <div class="col-md-6 mb-3">
                         <label for="albumin" class="form-label">
                             <i class="fas fa-microscope text-warning"></i> {{ texts.albumin }}
@@ -142,7 +142,7 @@
         </div>
     </div>
     
-    <!-- 右侧：说明信息 -->
+    <!-- Right Side: Instructions -->
     <div class="col-lg-4">
         <div class="feature-card">
             <h4 class="mb-3">
@@ -189,11 +189,7 @@
                     </h2>
                     <div id="kidney" class="accordion-collapse collapse" data-bs-parent="#clinicalGuide">
                         <div class="accordion-body">
-                            <strong>肌酐清除率 (CLCR)</strong><br>
-                            • 正常：80-120 mL/min<br>
-                            • 轻度损害：60-80 mL/min<br>
-                            • 中度损害：30-60 mL/min<br>
-                            • 重度损害：<30 mL/min
+                            {{ texts.kidney_guide_content | safe }}
                         </div>
                     </div>
                 </div>
@@ -206,10 +202,7 @@
                     </h2>
                     <div id="liver" class="accordion-collapse collapse" data-bs-parent="#clinicalGuide">
                         <div class="accordion-body">
-                            <strong>GGT 参考范围</strong><br>
-                            • 男性：≤50 U/L<br>
-                            • 女性：≤32 U/L<br>
-                            • 升高提示肝胆疾病或药物性肝损害
+                            {{ texts.liver_ggt_guide_content | safe }}
                         </div>
                     </div>
                 </div>
@@ -222,10 +215,7 @@
                     </h2>
                     <div id="electrolyte" class="accordion-collapse collapse" data-bs-parent="#clinicalGuide">
                         <div class="accordion-body">
-                            <strong>血钠正常范围</strong><br>
-                            • 136-145 mmol/L<br>
-                            • 低钠血症：<136 mmol/L<br>
-                            • 高钠血症：>145 mmol/L
+                            {{ texts.sodium_guide_content | safe }}
                         </div>
                     </div>
                 </div>
@@ -242,12 +232,12 @@ document.getElementById('predictionForm').addEventListener('submit', function(e)
     const normalText = btn.querySelector('.normal-text');
     const loadingText = btn.querySelector('.loading');
     
-    // 显示加载状态
+    // Show loading state
     normalText.style.display = 'none';
     loadingText.style.display = 'inline';
     btn.disabled = true;
     
-    // 表单验证
+    // Form validation
     const inputs = this.querySelectorAll('input[required]');
     let isValid = true;
     
@@ -262,21 +252,21 @@ document.getElementById('predictionForm').addEventListener('submit', function(e)
     
     if (!isValid) {
         e.preventDefault();
-        // 恢复按钮状态
+        // Restore button state
         normalText.style.display = 'inline';
         loadingText.style.display = 'none';
         btn.disabled = false;
         
-        alert('请填写所有必填字段！');
+        alert('{{ texts.required_params }}');
     }
 });
 
-// 输入验证
+// Input validation
 document.querySelectorAll('input[type="number"]').forEach(input => {
     input.addEventListener('input', function() {
         this.classList.remove('is-invalid');
         
-        // 范围验证
+        // Range validation
         const min = parseFloat(this.min);
         const max = parseFloat(this.max);
         const value = parseFloat(this.value);
