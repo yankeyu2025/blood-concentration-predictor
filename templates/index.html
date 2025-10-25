@@ -7,7 +7,7 @@
         <div class="feature-card">
             <h3 class="mb-4">
                 <i class="fas fa-clipboard-list text-primary"></i> 
-                患者信息输入
+                {{ texts.patient_info }}
             </h3>
             
             <form id="predictionForm" method="POST" action="{{ url_for('predict') }}">
@@ -15,7 +15,7 @@
                     <!-- 日剂量 -->
                     <div class="col-md-6 mb-3">
                         <label for="daily_dose" class="form-label">
-                            <i class="fas fa-pills text-info"></i> 日剂量 (g)
+                            <i class="fas fa-pills text-info"></i> {{ texts.daily_dose }}
                         </label>
                         <input type="number" 
                                class="form-control" 
@@ -27,14 +27,14 @@
                                required>
                         <div class="feature-info">
                             <i class="fas fa-info-circle"></i> 
-                            患者每日服用的药物总剂量，通常范围：0.1-5.0g
+                            {{ texts.daily_dose_info }}
                         </div>
                     </div>
                     
                     <!-- 肌酐清除率 -->
                     <div class="col-md-6 mb-3">
                         <label for="clcr" class="form-label">
-                            <i class="fas fa-kidney text-warning"></i> 肌酐清除率 (mL/min)
+                            <i class="fas fa-kidney text-warning"></i> {{ texts.clcr }}
                         </label>
                         <input type="number" 
                                class="form-control" 
@@ -46,14 +46,14 @@
                                required>
                         <div class="feature-info">
                             <i class="fas fa-info-circle"></i> 
-                            肾功能指标，正常范围：80-120 mL/min
+                            {{ texts.clcr_info }}
                         </div>
                     </div>
                     
-                    <!-- 谷氨酰转肽酶 -->
+                    <!-- GGT -->
                     <div class="col-md-6 mb-3">
                         <label for="ggt" class="form-label">
-                            <i class="fas fa-liver text-success"></i> GGT (U/L)
+                            <i class="fas fa-flask text-success"></i> {{ texts.ggt }}
                         </label>
                         <input type="number" 
                                class="form-control" 
@@ -65,18 +65,18 @@
                                required>
                         <div class="feature-info">
                             <i class="fas fa-info-circle"></i> 
-                            肝功能指标，正常范围：男性 ≤50 U/L，女性 ≤32 U/L
+                            {{ texts.ggt_info }}
                         </div>
                     </div>
                     
                     <!-- 血钠 -->
                     <div class="col-md-6 mb-3">
-                        <label for="na" class="form-label">
-                            <i class="fas fa-tint text-primary"></i> 血钠 (mmol/L)
+                        <label for="sodium" class="form-label">
+                            <i class="fas fa-tint text-primary"></i> {{ texts.sodium }}
                         </label>
                         <input type="number" 
                                class="form-control" 
-                               id="na" 
+                               id="sodium" 
                                name="Na(mmol/L)" 
                                step="0.1" 
                                min="120" 
@@ -84,18 +84,18 @@
                                required>
                         <div class="feature-info">
                             <i class="fas fa-info-circle"></i> 
-                            电解质平衡指标，正常范围：136-145 mmol/L
+                            {{ texts.sodium_info }}
                         </div>
                     </div>
                     
-                    <!-- 高密度脂蛋白胆固醇 -->
+                    <!-- HDL-C -->
                     <div class="col-md-6 mb-3">
-                        <label for="hdl_c" class="form-label">
-                            <i class="fas fa-heart text-danger"></i> HDL-C (mmol/L)
+                        <label for="hdl" class="form-label">
+                            <i class="fas fa-heart text-danger"></i> {{ texts.hdl }}
                         </label>
                         <input type="number" 
                                class="form-control" 
-                               id="hdl_c" 
+                               id="hdl" 
                                name="HDL-C(mmol/L)" 
                                step="0.01" 
                                min="0" 
@@ -103,26 +103,26 @@
                                required>
                         <div class="feature-info">
                             <i class="fas fa-info-circle"></i> 
-                            "好胆固醇"，正常范围：男性 >1.0，女性 >1.3 mmol/L
+                            {{ texts.hdl_info }}
                         </div>
                     </div>
                     
                     <!-- 白蛋白 -->
                     <div class="col-md-6 mb-3">
-                        <label for="alb" class="form-label">
-                            <i class="fas fa-flask text-secondary"></i> 白蛋白 (g/L)
+                        <label for="albumin" class="form-label">
+                            <i class="fas fa-microscope text-warning"></i> {{ texts.albumin }}
                         </label>
                         <input type="number" 
                                class="form-control" 
-                               id="alb" 
+                               id="albumin" 
                                name="ALB(g/L)" 
                                step="0.1" 
-                               min="20" 
-                               max="60"
+                               min="0" 
+                               max="80"
                                required>
                         <div class="feature-info">
                             <i class="fas fa-info-circle"></i> 
-                            营养状态指标，正常范围：40-55 g/L
+                            {{ texts.albumin_info }}
                         </div>
                     </div>
                 </div>
@@ -130,11 +130,11 @@
                 <div class="text-center mt-4">
                     <button type="submit" class="btn btn-primary btn-lg" id="predictBtn">
                         <span class="normal-text">
-                            <i class="fas fa-brain"></i> 开始预测
+                            <i class="fas fa-brain"></i> {{ texts.start_prediction }}
                         </span>
                         <span class="loading">
                             <span class="spinner-border spinner-border-sm me-2"></span>
-                            预测中...
+                            {{ texts.predicting }}
                         </span>
                     </button>
                 </div>
@@ -147,29 +147,29 @@
         <div class="feature-card">
             <h4 class="mb-3">
                 <i class="fas fa-info-circle text-info"></i> 
-                使用说明
+                {{ texts.usage_instructions }}
             </h4>
             
             <div class="alert alert-info">
-                <h6><i class="fas fa-target"></i> 预测目标</h6>
-                <p class="mb-0">评估患者血药浓度是否存在异常风险</p>
+                <h6><i class="fas fa-target"></i> {{ texts.prediction_target }}</h6>
+                <p class="mb-0">{{ texts.prediction_target_desc }}</p>
             </div>
             
             <div class="alert alert-warning">
-                <h6><i class="fas fa-exclamation-triangle"></i> 重要提醒</h6>
+                <h6><i class="fas fa-exclamation-triangle"></i> {{ texts.important_reminder }}</h6>
                 <ul class="mb-0">
-                    <li>本系统仅供临床参考，不能替代医生判断</li>
-                    <li>请确保输入数据的准确性</li>
-                    <li>异常结果需结合临床实际情况分析</li>
+                    <li>{{ texts.reminder_1 }}</li>
+                    <li>{{ texts.reminder_2 }}</li>
+                    <li>{{ texts.reminder_3 }}</li>
                 </ul>
             </div>
             
             <div class="alert alert-success">
-                <h6><i class="fas fa-chart-bar"></i> 模型性能</h6>
+                <h6><i class="fas fa-chart-bar"></i> {{ texts.model_performance }}</h6>
                 <ul class="mb-0">
-                    <li>准确率：86.7%</li>
-                    <li>AUC值：0.888</li>
-                    <li>基于6个关键临床特征</li>
+                    <li>{{ texts.accuracy }}</li>
+                    <li>{{ texts.auc_value }}</li>
+                    <li>{{ texts.features }}</li>
                 </ul>
             </div>
         </div>
@@ -177,14 +177,14 @@
         <div class="feature-card">
             <h4 class="mb-3">
                 <i class="fas fa-stethoscope text-success"></i> 
-                临床指导
+                {{ texts.clinical_guidance }}
             </h4>
             
             <div class="accordion" id="clinicalGuide">
                 <div class="accordion-item">
                     <h2 class="accordion-header">
                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#kidney">
-                            肾功能评估
+                            {{ texts.kidney_function }}
                         </button>
                     </h2>
                     <div id="kidney" class="accordion-collapse collapse" data-bs-parent="#clinicalGuide">
@@ -201,7 +201,7 @@
                 <div class="accordion-item">
                     <h2 class="accordion-header">
                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#liver">
-                            肝功能评估
+                            {{ texts.liver_function }}
                         </button>
                     </h2>
                     <div id="liver" class="accordion-collapse collapse" data-bs-parent="#clinicalGuide">
@@ -217,7 +217,7 @@
                 <div class="accordion-item">
                     <h2 class="accordion-header">
                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#electrolyte">
-                            电解质平衡
+                            {{ texts.electrolyte_balance }}
                         </button>
                     </h2>
                     <div id="electrolyte" class="accordion-collapse collapse" data-bs-parent="#clinicalGuide">
