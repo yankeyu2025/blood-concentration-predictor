@@ -167,10 +167,10 @@
                 {{ texts.indicator_interpretation }}
             </h4>
             
-            {% set clcr = result.input_data['CLCR'] %}
-            {% set ggt = result.input_data['GGT(U/L)'] %}
-            {% set na = result.input_data['Na(mmol/L)'] %}
-            {% set alb = result.input_data['ALB(g/L)'] %}
+            {% set clcr = result.input_data['CLCR'] | float %}
+            {% set ggt = result.input_data['GGT(U/L)'] | float %}
+            {% set na = result.input_data['Na(mmol/L)'] | float %}
+            {% set alb = result.input_data['ALB(g/L)'] | float %}
             
             <div class="mb-3">
                 <h6>{{ texts.kidney_function }}</h6>
