@@ -1,0 +1,78 @@
+{
+  "model_type": "LogisticRegression",
+  "features": [
+    "Daily dose（g）",
+    "CLCR",
+    "GGT(U/L)",
+    "Na(mmol/L)",
+    "HDL-C(mmol/L)",
+    "ALB(g/L)"
+  ],
+  "feature_count": 6,
+  "performance": {
+    "accuracy": 0.7710843373493976,
+    "auc": 0.8838619402985075
+  },
+  "thresholds": {
+    "binary": 0.5,
+    "three_class_low": 0.5,
+    "three_class_high": 1.2
+  },
+  "model_params": {
+    "C": 1,
+    "class_weight": "balanced",
+    "dual": false,
+    "fit_intercept": true,
+    "intercept_scaling": 1,
+    "l1_ratio": null,
+    "max_iter": 1000,
+    "multi_class": "deprecated",
+    "n_jobs": null,
+    "penalty": "l2",
+    "random_state": 42,
+    "solver": "liblinear",
+    "tol": 0.0001,
+    "verbose": 0,
+    "warm_start": false
+  },
+  "feature_descriptions": {
+    "Daily dose（g）": "日剂量（克）",
+    "CLCR": "肌酐清除率",
+    "GGT(U/L)": "γ-谷氨酰转移酶",
+    "Na(mmol/L)": "钠离子浓度",
+    "HDL-C(mmol/L)": "高密度脂蛋白胆固醇",
+    "ALB(g/L)": "白蛋白"
+  },
+  "clinical_ranges": {
+    "Daily dose（g）": {
+      "min": 0.1,
+      "max": 2.0,
+      "unit": "g"
+    },
+    "CLCR": {
+      "min": 30,
+      "max": 150,
+      "unit": "mL/min"
+    },
+    "GGT(U/L)": {
+      "min": 5,
+      "max": 200,
+      "unit": "U/L"
+    },
+    "Na(mmol/L)": {
+      "min": 135,
+      "max": 145,
+      "unit": "mmol/L"
+    },
+    "HDL-C(mmol/L)": {
+      "min": 0.8,
+      "max": 2.5,
+      "unit": "mmol/L"
+    },
+    "ALB(g/L)": {
+      "min": 35,
+      "max": 55,
+      "unit": "g/L"
+    }
+  }
+}
