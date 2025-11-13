@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Stacking 二分类服务</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body { font-family: system-ui, Segoe UI, Arial; max-width: 960px; margin: 40px auto; line-height: 1.6; }
+      code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      h1 { margin-bottom: 0.5rem; }
+      .card { border: 1px solid #ddd; border-radius: 8px; padding: 16px; }
+      .grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+      @media (min-width: 720px) { .grid { grid-template-columns: 1fr 1fr; } }
+      label { font-size: 0.95rem; color: #555; }
+      input { margin-top: 4px; margin-bottom: 10px; padding: 6px; }
+    </style>
+  </head>
+  <body>
+    <h1>Stacking 二分类服务已启动</h1>
+    <p>健康检查：<a href="/health">/health</a></p>
+
+    <div class="grid">
+      <div class="card">
+        <h2>在线预测</h2>
+        <div id="form"></div>
+        <p>
+          <button id="btnSample">用示例填充</button>
+          <button id="btnPredict">提交预测</button>
+        </p>
+        <div id="result" class="card" style="margin-top:12px;display:none"></div>
+      </div>
+      <div class="card">
+        <h2>示例 cURL</h2>
+        <pre id="curl"></pre>
+        <h3>特征顺序</h3>
+        <pre id="features"></pre>
+      </div>
+    </div>
+
+    <script>
+      const sample = {{ sample|tojson }};
+      const features = {{ features|tojson }};
+
+      // 构建表单：优先按 sample 的键生成输入项
+      const formDiv = document.getElementById('form');
+      const keys = Object.keys(sample || {});
+      const inputs = {};
+      keys.forEach((k) => {
+        const row = document.createElement('div');
+        const label = document.createElement('label');
+        label.textContent = k;
+        label.style.display = 'block';
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.step = 'any';
+        input.placeholder = '输入数值';
+        input.style.width = '100%';
+        input.style.boxSizing = 'border-box';
+        row.appendChild(label);
+        row.appendChild(input);
+        formDiv.appendChild(row);
+        inputs[k] = input;
+      });
+
+      function payloadFromForm() {
+        const obj = {};
+        keys.forEach((k) => {
+          const v = inputs[k].value;
+          obj[k] = v === '' ? null : Number(v);
+        });
+        return { instances: [ obj ] };
+      }
+
+      // 示例填充
+      document.getElementById('btnSample').onclick = () => {
+        keys.forEach((k) => { inputs[k].value = sample[k]; });
+      };
+
+      // 提交预测
+      const resultDiv = document.getElementById('result');
+      document.getElementById('btnPredict').onclick = async () => {
+        resultDiv.style.display = 'block';
+        resultDiv.textContent = '预测中...';
+        try {
+          const body = payloadFromForm();
+          const resp = await fetch('/predict', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+          const data = await resp.json();
+          if (!resp.ok) {
+            resultDiv.textContent = '错误：' + (data.error || '预测失败');
+            return;
+          }
+          const p = Array.isArray(data.proba) ? data.proba[0] : data.proba;
+          const lbl = Array.isArray(data.label) ? data.label[0] : data.label;
+          resultDiv.innerHTML = `<b>预测概率：</b> ${p}<br/><b>预测标签：</b> ${lbl}`;
+        } catch (e) {
+            resultDiv.textContent = '网络错误或服务未启动：' + e;
+        }
+      };
+
+      // 显示 cURL 与特征
+      const payloadSample = { instances: [ sample ] };
+      const curl = `curl -s -X POST ${location.origin}/predict \\
+  -H 'Content-Type: application/json' \\
+  -d '${JSON.stringify(payloadSample).replace(/'/g, "'\\''")}'`;
+      document.getElementById('curl').textContent = curl;
+      document.getElementById('features').textContent = JSON.stringify(features || [], null, 2);
+    </script>
+  </body>
+  </html>
