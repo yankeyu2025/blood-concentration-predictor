@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="{{ current_lang }}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ texts.title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <div>
+        <h1 class="title">{{ texts.title }}</h1>
+        <p class="subtitle">{{ texts.subtitle }}</p>
+      </div>
+      <div class="buttons">
+        <a class="btn btn-secondary" href="/?lang=zh">中文</a>
+        <a class="btn btn-secondary" href="/?lang=en">English</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="page-grid">
+    <section class="card">
+      <div class="card-header">
+        <h2>{{ texts.patient_info }}</h2>
+        <p class="tips">{{ texts.tips }}</p>
+      </div>
+      <div class="card-body">
+        <form id="feature-form" class="grid">
+          {% for name in feature_names %}
+          <div class="field">
+            <label class="label" for="f_{{ loop.index }}">{{ feature_units.get(name, name) }}</label>
+            <input class="input" id="f_{{ loop.index }}" name="{{ name }}" type="number" step="0.01" placeholder="{{ texts.input_placeholder_prefix }}{{ name }}" />
+          </div>
+          {% endfor %}
+        </form>
+      </div>
+
+      <div class="card-footer actions">
+        <div class="threshold">
+          <label>{{ texts.threshold_label }}</label>
+          <span id="threshold-fixed" class="pill">0.50</span>
+        </div>
+        <div class="buttons">
+          <button id="fill-example" class="btn btn-secondary">{{ texts.fill_example_btn }}</button>
+          <button id="submit" class="btn btn-primary">{{ texts.start_btn }}</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="card side-card">
+      <div class="card-header">
+        <h2>{{ texts.usage_title }}</h2>
+      </div>
+      <div class="card-body">
+        <div class="info-block info-green">
+          <h3>{{ texts.clcr_note_title }}</h3>
+          <p>{{ texts.clcr_note_text }}</p>
+        </div>
+        <div class="info-block info-blue">
+          <h3>{{ texts.usage_target_title }}</h3>
+          <p>{{ texts.usage_target_text }}</p>
+        </div>
+        <div class="info-block info-yellow">
+          <h3>{{ texts.usage_reminder_title }}</h3>
+          <ul>
+            {% for it in texts.usage_reminder_items %}
+            <li>{{ it }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </aside>
+    </div>
+
+    <section id="result-card" class="card result hidden">
+      <div class="card-header">
+        <h2>{{ texts.prediction_result }}</h2>
+      </div>
+      <div class="card-body">
+        <div class="result-row">
+          <div>{{ texts.prob_label }}：</div>
+          <div id="prob" class="pill">—</div>
+        </div>
+        <div class="result-row">
+          <div>{{ texts.threshold_label }}：</div>
+          <div id="thr" class="pill">—</div>
+        </div>
+        <div class="result-row">
+          <div>{{ texts.risk_label }}：</div>
+          <div id="risk" class="pill">—</div>
+        </div>
+      </div>
+      <div class="card-footer">
+        <small class="note">{{ texts.usage_reminder_items[0] }}</small>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <div class="container">
+      <small>{{ texts.footer }}</small>
+    </div>
+  </footer>
+
+  <script>
+    window.FEATURE_NAMES = {{ feature_names | tojson }};
+    window.TEXTS = {{ texts | tojson }};
+  </script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
