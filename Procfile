@@ -1,1 +1,1 @@
-web: gunicorn web_app:app
+web: gunicorn stacking_server:app
