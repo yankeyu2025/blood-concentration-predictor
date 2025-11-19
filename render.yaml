@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: lithium-stacking-prediction
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python stacking_server_final.py
+    envVars:
+      - key: USE_WAITRESS
+        value: "1"
+      - key: ENSEMBLE_MODEL_DIR
+        value: "web_models"
