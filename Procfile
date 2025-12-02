@@ -1,1 +1,1 @@
-web: gunicorn stacking_server:app
+web: python lr_server_final.py
