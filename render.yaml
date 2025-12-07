@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: lithium-lr-prediction
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python lr_server_final.py
+    envVars:
+      - key: USE_WAITRESS
+        value: "1"
+      - key: ENSEMBLE_MODEL_DIR
+        value: "web_models"
