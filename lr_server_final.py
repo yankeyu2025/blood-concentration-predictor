@@ -1,0 +1,371 @@
+import os
+import json
+import logging
+import joblib
+import numpy as np
+from flask import Flask, render_template, request, jsonify
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+app = Flask(__name__, static_folder='web_ui', template_folder='web_ui')
+app.config['SECRET_KEY'] = os.urandom(24)
+
+LANGUAGES = {
+    'zh': {'name': '中文'},
+    'en': {'name': 'English'},
+}
+
+def get_language():
+    lang = request.args.get('lang')
+    return 'zh' if lang == 'zh' else 'en'
+
+def get_texts():
+    if get_language() == 'en':
+        return {
+            'title': 'Lithium Blood Concentration Risk',
+            'subtitle': '',
+            'tips': 'Fill patient features to predict',
+            
+            'fill_example_btn': 'Fill example',
+            'start_btn': 'Predict',
+            'risk_insufficient': 'Low exposure risk',
+            'risk_adequate': 'Adequate or high exposure',
+            'error': 'Error',
+            'input_placeholder_prefix': 'Please input ',
+            'patient_info': 'Patient Information',
+            'prediction_result': 'Prediction Result',
+            'prob_label': 'Positive probability',
+            'risk_label': 'Risk level',
+            'footer': 'CLCR Prediction · XGBoost',
+            'feature_units': {
+                'height': 'Height (cm)',
+                'weight': 'Weight (kg)',
+                'Daily dose(g)': 'Daily dose (g)',
+                'ALB(g/L)': 'ALB (g/L)',
+                'ALP(U/L)': 'ALP (U/L)'
+            },
+            'usage_title': 'Usage Instructions',
+            'clcr_note_title': 'About CLCR',
+            'clcr_note_text': 'CLCR reflects renal function and impacts lithium clearance.',
+            'usage_target_title': 'Intended Use',
+            'usage_target_text': 'For clinical decision support, not a diagnostic final.',
+            'usage_reminder_title': 'Reminders',
+            'usage_reminder_items': [
+                'This tool assists clinicians and does not replace medical judgment.',
+                'Ensure lab values and daily dose are accurate.'
+            ]
+        }
+    return {
+        'title': '碳酸锂血药浓度预测系统',
+        'subtitle': '',
+        'tips': '请填写患者特征后进行预测',
+        
+        'fill_example_btn': '填充示例',
+        'start_btn': '开始预测',
+        'risk_insufficient': '低血药浓度风险',
+        'risk_adequate': '血药浓度达标或偏高',
+        'error': '错误',
+        'input_placeholder_prefix': '请输入 ',
+        'patient_info': '患者信息输入',
+        'prediction_result': '预测结果',
+        'prob_label': '阳性概率',
+        'risk_label': '风险等级',
+        'footer': 'CLCR 预测系统 · XGBoost',
+        'feature_units': {
+            'height': '身高（cm）',
+            'weight': '体重（kg）',
+            'Daily dose(g)': '每日剂量（g）',
+            'ALB(g/L)': '白蛋白（g/L）',
+            'ALP(U/L)': '碱性磷酸酶（U/L）'
+        },
+        'usage_title': '使用说明',
+        
+        'usage_target_title': '适用范围',
+        'usage_target_text': '用于临床决策支持，不作为最终诊断依据。',
+        'usage_reminder_title': '注意事项',
+        'usage_reminder_items': [
+            '本工具用于辅助，不替代医生专业判断。',
+            '请确保化验数值与每日剂量填写准确。'
+        ]
+    }
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_DIR = os.getenv('MODEL_DIR') or os.getenv('ENSEMBLE_MODEL_DIR') or ''
+if MODEL_DIR and not os.path.isabs(MODEL_DIR):
+    MODEL_DIR = os.path.join(BASE_DIR, MODEL_DIR)
+if not MODEL_DIR or not os.path.exists(MODEL_DIR):
+    for d in [
+        os.path.join(BASE_DIR, '3_最终评估与报告'),
+        os.path.join(BASE_DIR, 'web_models')
+    ]:
+        if os.path.exists(d):
+            MODEL_DIR = d
+            break
+logging.info(f"MODEL_DIR -> {MODEL_DIR}")
+
+ensemble_model = {}
+last_result = None
+
+def canonicalize_name(name: str):
+    if not isinstance(name, str):
+        return name
+    return name.replace('（', '(').replace('）', ')').strip()
+
+def load_model():
+    try:
+        model = {}
+        # XGBoost 模型
+        xgb_candidates = [
+            os.path.join(MODEL_DIR, 'XGBoost_最终训练模型.pkl'),
+            os.path.join(BASE_DIR, '3_最终评估与报告', 'XGBoost_最终训练模型.pkl')
+        ]
+        xgb_path = next((p for p in xgb_candidates if os.path.exists(p)), None)
+        if not xgb_path:
+            raise FileNotFoundError('缺少 XGBoost_最终训练模型.pkl')
+        model['xgb'] = joblib.load(xgb_path)
+        model['xgb_path'] = xgb_path
+
+        # 标准化器与特征顺序
+        scaler_path = next((p for p in [
+            os.path.join(BASE_DIR, '1_数据划分与模型初选', '数据标准化器.pkl'),
+            os.path.join(MODEL_DIR, '数据标准化器.pkl')
+        ] if os.path.exists(p)), None)
+        if not scaler_path:
+            raise FileNotFoundError('缺少标准化器')
+        model['scaler'] = joblib.load(scaler_path)
+        model['scaler_path'] = scaler_path
+
+        feat_path = next((p for p in [
+            os.path.join(BASE_DIR, '1_数据划分与模型初选', '最终特征集.json'),
+            os.path.join(MODEL_DIR, '最终特征集.json')
+        ] if os.path.exists(p)), None)
+        if feat_path:
+            with open(feat_path, 'r', encoding='utf-8') as f:
+                raw_feats = json.load(f)
+                model['feature_names'] = [canonicalize_name(x) for x in raw_feats]
+        else:
+            model['feature_names'] = ['height', 'weight', 'Daily dose(g)', 'ALB(g/L)', 'ALP(U/L)']
+
+        order_path = next((p for p in [
+            os.path.join(BASE_DIR, '1_数据划分与模型初选', '标准化器特征列.json'),
+            os.path.join(MODEL_DIR, '标准化器特征列.json')
+        ] if os.path.exists(p)), None)
+        if order_path:
+            with open(order_path, 'r', encoding='utf-8') as f:
+                raw_order = json.load(f)
+                model['scaler_feature_order'] = [canonicalize_name(x) for x in raw_order]
+            model['order_path'] = order_path
+        else:
+            model['scaler_feature_order'] = model['feature_names']
+
+        defaults_path = os.path.join(BASE_DIR, '1_数据划分与模型初选', '缺失值填充值.json')
+        if os.path.exists(defaults_path):
+            with open(defaults_path, 'r', encoding='utf-8') as f:
+                model['fill_defaults'] = json.load(f)
+        else:
+            model['fill_defaults'] = {}
+
+        # 读取验证集基于约登指数优化的阈值
+        thr_path = os.path.join(BASE_DIR, '2_集成权重优化', '集成模型最佳权重.json')
+        decision_threshold = 0.5
+        try:
+            if os.path.exists(thr_path):
+                with open(thr_path, 'r', encoding='utf-8') as f:
+                    thr_obj = json.load(f)
+                tmap = thr_obj.get('thresholds') or {}
+                decision_threshold = float(tmap.get('XGBoost', decision_threshold))
+        except Exception:
+            pass
+        model['decision_threshold'] = decision_threshold
+        model['model_dir'] = MODEL_DIR
+        return model
+    except Exception as e:
+        logging.error(f"load_model error: {e}", exc_info=True)
+        return None
+
+ensemble_model = load_model()
+
+@app.before_request
+def ensure_model():
+    global ensemble_model
+    if not ensemble_model:
+        ensemble_model = load_model()
+
+@app.get('/')
+def index():
+    return render_template(
+        'index.html',
+        texts=get_texts(),
+        current_lang=get_language(),
+        languages=LANGUAGES,
+        feature_names=ensemble_model.get('feature_names', []),
+        feature_units=get_texts().get('feature_units', {}),
+    )
+
+@app.get('/version')
+def version():
+    return jsonify({'python': os.sys.version})
+
+@app.get('/info')
+def info():
+    return jsonify({
+        'model_dir': ensemble_model.get('model_dir'),
+        'feature_names': ensemble_model.get('feature_names'),
+        'input_feature_order': ensemble_model.get('input_feature_order'),
+        'xgb_path': ensemble_model.get('xgb_path'),
+        'scaler_path': ensemble_model.get('scaler_path'),
+        'order_path': ensemble_model.get('order_path'),
+        'decision_threshold': ensemble_model.get('decision_threshold')
+    })
+
+@app.get('/scaler')
+def scaler_info():
+    feats = ensemble_model.get('feature_names', [])
+    order = ensemble_model.get('scaler_feature_order', feats)
+    use_order = [f for f in order if f in feats]
+    scaler = ensemble_model.get('scaler')
+    means = getattr(scaler, 'mean_', None)
+    scales = getattr(scaler, 'scale_', None)
+    idx_map = {f: i for i, f in enumerate(order)}
+    m = {f: (float(means[idx_map[f]]) if means is not None and f in idx_map else None) for f in use_order}
+    s = {f: (float(scales[idx_map[f]]) if scales is not None and f in idx_map else None) for f in use_order}
+    return jsonify({'order_used': use_order, 'means': m, 'scales': s, 'scaler_path': ensemble_model.get('scaler_path'), 'order_path': ensemble_model.get('order_path')})
+
+@app.get('/models')
+def models_info():
+    info = {}
+    try:
+        clf = ensemble_model.get('xgb')
+        fo = getattr(clf, 'feature_names_in_', None)
+        info['XGBoost'] = {
+            'has_feature_names_in': fo is not None,
+            'feature_count': int(len(fo)) if fo is not None else None,
+            'feature_names_in': [canonicalize_name(f) for f in list(fo)] if fo is not None else None
+        }
+    except Exception:
+        info['XGBoost'] = {'has_feature_names_in': False, 'feature_count': None, 'feature_names_in': None}
+    return jsonify(info)
+
+@app.post('/predict')
+def predict():
+    try:
+        feature_names = ensemble_model['feature_names']
+        req_json = request.get_json(silent=True)
+        instances = None
+        if isinstance(req_json, dict):
+            instances = req_json.get('instances') or req_json
+
+        form_data = None
+        if not instances:
+            form_data = request.form.to_dict()
+
+        def extract_values(src: dict, strict: bool = False):
+            filled = []
+            vals_map = {}
+            aliases = {
+                'Daily dose（g）': 'Daily dose(g)'
+            }
+            name_set = {f: f for f in feature_names}
+            for alt, base in aliases.items():
+                name_set[alt] = base
+            for fname in feature_names:
+                v = src.get(fname)
+                if v is None:
+                    for alt, base in aliases.items():
+                        if base == fname:
+                            v = src.get(alt)
+                            if v is not None:
+                                break
+                if strict:
+                    if v is None or (isinstance(v, str) and v.strip() == ''):
+                        vals_map[fname] = None
+                        continue
+                    vals_map[fname] = float(v)
+                else:
+                    if v is None or (isinstance(v, str) and v.strip() == ''):
+                        d = ensemble_model.get('fill_defaults', {}).get(fname)
+                        if d is None:
+                            for alt, base in aliases.items():
+                                if base == fname:
+                                    d = ensemble_model.get('fill_defaults', {}).get(alt)
+                                    break
+                        if d is not None:
+                            v = d
+                            filled.append(fname)
+                        else:
+                            v = 0.0
+                            filled.append(fname)
+                    vals_map[fname] = float(v)
+            order_used = feature_names
+            ensemble_model['input_feature_order'] = order_used
+            missing = [f for f in feature_names if vals_map.get(f) is None]
+            values = [vals_map[f] for f in order_used]
+            return values, missing, filled
+
+        if instances:
+            inst = instances[0] if isinstance(instances, list) else instances
+            values, missing, filled = extract_values(inst, strict=True)
+        else:
+            values, missing, filled = extract_values(form_data or {}, strict=True)
+        if missing:
+            return jsonify({'ok': False, 'error': 'Missing required features', 'missing': missing, 'filled': filled}), 200
+
+        X = np.array([values], dtype=float)
+        scaler = ensemble_model['scaler']
+        means = getattr(scaler, 'mean_', None)
+        scales = getattr(scaler, 'scale_', None)
+        order = ensemble_model.get('scaler_feature_order')
+        if means is not None and scales is not None and order is not None:
+            idx_map = {f: i for i, f in enumerate(order)}
+            mean_vec = []
+            scale_vec = []
+            use_order = ensemble_model.get('input_feature_order', feature_names)
+            for f in use_order:
+                j = idx_map.get(f)
+                if j is None:
+                    mean_vec.append(0.0)
+                    scale_vec.append(1.0)
+                else:
+                    mean_val = float(means[j])
+                    scale_val = float(scales[j])
+                    mean_vec.append(mean_val)
+                    scale_vec.append(scale_val if scale_val != 0 else 1.0)
+            mean_vec = np.array(mean_vec, dtype=float)
+            scale_vec = np.array(scale_vec, dtype=float)
+            Xs = (X - mean_vec) / scale_vec
+        else:
+            Xs = scaler.transform(X)
+
+        # XGBoost 使用原始特征，不进行标准化
+        X_eval = X  # 按输入顺序与最终特征顺序对齐即可
+        clf = ensemble_model['xgb']
+        final_prob = float(clf.predict_proba(X_eval)[:, 1][0])
+        threshold = float(ensemble_model.get('decision_threshold', 0.5))
+        final_label = 1 if final_prob >= threshold else 0
+
+        inputs_map = {f: float(v) for f, v in zip(use_order, values)}
+        resp = {'ok': True, 'pos_proba': [final_prob], 'pred': [final_label], 'threshold': threshold, 'inputs': inputs_map}
+        global last_result
+        last_result = resp
+        return jsonify(resp)
+    except Exception as e:
+        logging.error(f"predict error: {e}", exc_info=True)
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+@app.get('/last')
+def last():
+    if last_result:
+        return jsonify(last_result)
+    return jsonify({'ok': False, 'error': 'no recent prediction'})
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', '5000'))
+    use_waitress = os.environ.get('USE_WAITRESS', '1') == '1'
+    if use_waitress:
+        try:
+            from waitress import serve
+            serve(app, host='0.0.0.0', port=port)
+        except Exception:
+            app.run(host='0.0.0.0', port=port)
+    else:
+        app.run(host='0.0.0.0', port=port)
