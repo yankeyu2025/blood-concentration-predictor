@@ -4,7 +4,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnFill = document.getElementById('fill-example');
   const btnSubmit = document.getElementById('submit');
   const resultCard = document.getElementById('result-card');
+  const explainCard = document.getElementById('explain-card');
   const elRisk = document.getElementById('risk');
+  const elWaterfall = document.getElementById('waterfall');
+  const elExplainUnavailable = document.getElementById('explain-unavailable');
 
 
   const FEATURE_NAMES = Array.isArray(window.FEATURE_NAMES) ? window.FEATURE_NAMES : [];
@@ -57,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elRisk.classList.remove('ok');
         elRisk.classList.add('bad');
         resultCard.classList.remove('hidden');
+        if (explainCard) explainCard.classList.add('hidden');
         return;
       }
 
@@ -70,6 +74,9 @@ document.addEventListener('DOMContentLoaded', () => {
       elRisk.classList.remove('ok', 'bad');
       elRisk.classList.add(pred === 0 ? 'bad' : 'ok');
 
+      renderWaterfall(data.shap);
+      if (explainCard) explainCard.classList.remove('hidden');
+
       
 
       resultCard.classList.remove('hidden');
@@ -79,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
       elRisk.classList.remove('ok');
       elRisk.classList.add('bad');
       resultCard.classList.remove('hidden');
+      if (explainCard) explainCard.classList.add('hidden');
       console.error('预测失败：', err);
     }
   });
