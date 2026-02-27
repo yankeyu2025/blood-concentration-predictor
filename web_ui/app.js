@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const explainCard = document.getElementById('explain-card');
   const elRisk = document.getElementById('risk');
   const elWaterfall = document.getElementById('waterfall');
-  const elExplainUnavailable = document.getElementById('explain-unavailable');
 
   const FEATURE_NAMES = Array.isArray(window.FEATURE_NAMES) ? window.FEATURE_NAMES : [];
 
@@ -37,7 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
     elWaterfall.innerHTML = '';
     if (!shapData || !Array.isArray(shapData.features) || shapData.features.length === 0) {
       elWaterfall.classList.add('hidden');
-      if (elExplainUnavailable) elExplainUnavailable.classList.remove('hidden');
       return;
     }
 
@@ -83,7 +81,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     elWaterfall.classList.remove('hidden');
-    if (elExplainUnavailable) elExplainUnavailable.classList.add('hidden');
   }
 
   btnFill.addEventListener('click', (e) => {
