@@ -4,26 +4,83 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnFill = document.getElementById('fill-example');
   const btnSubmit = document.getElementById('submit');
   const resultCard = document.getElementById('result-card');
+  const explainCard = document.getElementById('explain-card');
   const elRisk = document.getElementById('risk');
-
+  const elWaterfall = document.getElementById('waterfall');
+  const elExplainUnavailable = document.getElementById('explain-unavailable');
 
   const FEATURE_NAMES = Array.isArray(window.FEATURE_NAMES) ? window.FEATURE_NAMES : [];
 
-  // 固定阈值 0.5，无交互
-
   const SAMPLE = {
-    // 常见正常参考值
-    'height': 170,       // cm（示例）
-    'weight': 65,        // kg（示例）
-    'Daily dose(g)': 0.6,// g（碳酸锂示例日剂量）
-    'ALB(g/L)': 45,      // g/L（常见 40-50）
-    'ALP(U/L)': 90       // U/L（常见 44-147）
+    'height': 170,
+    'weight': 65,
+    'Daily dose(g)': 0.6,
+    'ALB(g/L)': 45,
+    'ALP(U/L)': 90
   };
+
+  function toDisplayLabel(name) {
+    return (window.TEXTS && window.TEXTS.feature_units && window.TEXTS.feature_units[name]) || name;
+  }
+
+  function renderWaterfall(shapData) {
+    if (!elWaterfall) return;
+    elWaterfall.innerHTML = '';
+    if (!shapData || !Array.isArray(shapData.features) || shapData.features.length === 0) {
+      elWaterfall.classList.add('hidden');
+      if (elExplainUnavailable) elExplainUnavailable.classList.remove('hidden');
+      return;
+    }
+
+    const features = shapData.features.slice(0, Number(shapData.top_n || 5));
+    const maxAbs = Math.max(...features.map((f) => Math.abs(Number(f.shap) || 0)), 1e-6);
+
+    features.forEach((item) => {
+      const shapVal = Number(item.shap) || 0;
+      const value = Number(item.value);
+      const row = document.createElement('div');
+      row.className = 'wf-row';
+
+      const meta = document.createElement('div');
+      meta.className = 'wf-meta';
+      meta.textContent = `${toDisplayLabel(item.feature)} = ${Number.isFinite(value) ? value.toFixed(2) : item.value}`;
+
+      const track = document.createElement('div');
+      track.className = 'wf-track';
+
+      const zero = document.createElement('div');
+      zero.className = 'wf-zero';
+      track.appendChild(zero);
+
+      const bar = document.createElement('div');
+      bar.className = `wf-bar ${shapVal >= 0 ? 'pos' : 'neg'}`;
+      const widthPct = (Math.abs(shapVal) / maxAbs) * 48;
+      bar.style.width = `${Math.max(widthPct, 2)}%`;
+      if (shapVal >= 0) {
+        bar.style.left = '50%';
+      } else {
+        bar.style.left = `${50 - Math.max(widthPct, 2)}%`;
+      }
+      track.appendChild(bar);
+
+      const val = document.createElement('div');
+      val.className = `wf-value ${shapVal >= 0 ? 'pos' : 'neg'}`;
+      val.textContent = `${shapVal >= 0 ? '+' : ''}${shapVal.toFixed(4)}`;
+
+      row.appendChild(meta);
+      row.appendChild(track);
+      row.appendChild(val);
+      elWaterfall.appendChild(row);
+    });
+
+    elWaterfall.classList.remove('hidden');
+    if (elExplainUnavailable) elExplainUnavailable.classList.add('hidden');
+  }
 
   btnFill.addEventListener('click', (e) => {
     e.preventDefault();
     FEATURE_NAMES.forEach((name, idx) => {
-      const input = document.getElementById(`f_${idx+1}`);
+      const input = document.getElementById(`f_${idx + 1}`);
       if (!input) return;
       if (Object.prototype.hasOwnProperty.call(SAMPLE, name)) {
         input.value = SAMPLE[name];
@@ -34,10 +91,9 @@ document.addEventListener('DOMContentLoaded', () => {
   btnSubmit.addEventListener('click', async (e) => {
     e.preventDefault();
     try {
-      // 阈值不在界面显示
       const inst = {};
       FEATURE_NAMES.forEach((name, idx) => {
-        const input = document.getElementById(`f_${idx+1}`);
+        const input = document.getElementById(`f_${idx + 1}`);
         if (!input) return;
         inst[name] = input.value;
       });
@@ -57,6 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elRisk.classList.remove('ok');
         elRisk.classList.add('bad');
         resultCard.classList.remove('hidden');
+        if (explainCard) explainCard.classList.add('hidden');
         return;
       }
 
@@ -65,12 +122,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const pred = Array.isArray(data.pred) ? Number(data.pred[0]) : (prob >= thrShow ? 1 : 0);
 
       const RISK_BAD = (window.TEXTS && window.TEXTS.risk_insufficient) || '低血药浓度风险';
-      const RISK_OK  = (window.TEXTS && window.TEXTS.risk_adequate) || '血药浓度达标或偏高';
+      const RISK_OK = (window.TEXTS && window.TEXTS.risk_adequate) || '血药浓度达标或偏高';
       elRisk.textContent = pred === 0 ? RISK_BAD : RISK_OK;
       elRisk.classList.remove('ok', 'bad');
       elRisk.classList.add(pred === 0 ? 'bad' : 'ok');
 
-      
+      renderWaterfall(data.shap);
+      if (explainCard) explainCard.classList.remove('hidden');
 
       resultCard.classList.remove('hidden');
       resultCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -79,6 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
       elRisk.classList.remove('ok');
       elRisk.classList.add('bad');
       resultCard.classList.remove('hidden');
+      if (explainCard) explainCard.classList.add('hidden');
       console.error('预测失败：', err);
     }
   });

@@ -3,6 +3,7 @@ import json
 import logging
 import joblib
 import numpy as np
+import xgboost as xgb
 from flask import Flask, render_template, request, jsonify
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -48,12 +49,15 @@ def get_texts():
             'clcr_note_title': 'About CLCR',
             'clcr_note_text': 'CLCR reflects renal function and impacts lithium clearance.',
             'usage_target_title': 'Intended Use',
-            'usage_target_text': 'For clinical decision support, not a diagnostic final.',
+            'usage_target_text': 'This tool is developed using an internal dataset and has not yet undergone external validation. It is intended to support research and clinical reference, and should not be used as the sole basis for clinical decision-making.',
             'usage_reminder_title': 'Reminders',
             'usage_reminder_items': [
                 'This tool assists clinicians and does not replace medical judgment.',
                 'Ensure lab values and daily dose are accurate.'
-            ]
+            ],
+            'explain_title': 'Model Interpretability (Waterfall)',
+            'explain_note': 'Positive SHAP values increase the predicted probability of concentration ≥0.5, while negative values decrease it.',
+            'explain_unavailable': 'Interpretability data is unavailable for this prediction.'
         }
     return {
         'title': '碳酸锂血药浓度预测系统',
@@ -81,13 +85,47 @@ def get_texts():
         'usage_title': '使用说明',
         
         'usage_target_title': '适用范围',
-        'usage_target_text': '用于临床决策支持，不作为最终诊断依据。',
+        'usage_target_text': '本工具基于内部数据集开发，尚未完成外部验证。其用途为科研与临床参考，不应作为临床决策的唯一依据。',
         'usage_reminder_title': '注意事项',
         'usage_reminder_items': [
             '本工具用于辅助，不替代医生专业判断。',
             '请确保化验数值与每日剂量填写准确。'
-        ]
+        ],
+        'explain_title': '模型可解释性（瀑布图）',
+        'explain_note': 'SHAP值为正表示该特征会提高“血药浓度≥0.5”的预测概率；为负则表示降低该概率。',
+        'explain_unavailable': '本次预测暂无法提供可解释性结果。'
     }
+
+
+def compute_shap_data(clf, X_eval, feature_names):
+    """Return per-feature SHAP contributions using XGBoost pred_contribs."""
+    try:
+        booster = clf.get_booster() if hasattr(clf, 'get_booster') else None
+        if booster is None:
+            return None
+        dmat = xgb.DMatrix(X_eval, feature_names=feature_names)
+        contribs = booster.predict(dmat, pred_contribs=True)
+        row = contribs[0].tolist()
+        base_value = float(row[-1])
+        feats = []
+        for idx, name in enumerate(feature_names):
+            val = float(X_eval[0, idx])
+            shap_value = float(row[idx])
+            feats.append({
+                'feature': name,
+                'value': val,
+                'shap': shap_value,
+                'abs_shap': abs(shap_value)
+            })
+        feats.sort(key=lambda x: x['abs_shap'], reverse=True)
+        return {
+            'base_value': base_value,
+            'features': feats,
+            'top_n': min(5, len(feats))
+        }
+    except Exception as e:
+        logging.warning(f"failed to compute SHAP contributions: {e}")
+        return None
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIR = os.getenv('MODEL_DIR') or os.getenv('ENSEMBLE_MODEL_DIR') or ''
@@ -314,6 +352,7 @@ def predict():
             return jsonify({'ok': False, 'error': 'Missing required features', 'missing': missing, 'filled': filled}), 200
 
         X = np.array([values], dtype=float)
+        use_order = ensemble_model.get('input_feature_order', feature_names)
         scaler = ensemble_model['scaler']
         means = getattr(scaler, 'mean_', None)
         scales = getattr(scaler, 'scale_', None)
@@ -322,7 +361,6 @@ def predict():
             idx_map = {f: i for i, f in enumerate(order)}
             mean_vec = []
             scale_vec = []
-            use_order = ensemble_model.get('input_feature_order', feature_names)
             for f in use_order:
                 j = idx_map.get(f)
                 if j is None:
@@ -345,9 +383,17 @@ def predict():
         final_prob = float(clf.predict_proba(X_eval)[:, 1][0])
         threshold = float(ensemble_model.get('decision_threshold', 0.5))
         final_label = 1 if final_prob >= threshold else 0
+        shap_data = compute_shap_data(clf, X_eval, use_order)
 
         inputs_map = {f: float(v) for f, v in zip(use_order, values)}
-        resp = {'ok': True, 'pos_proba': [final_prob], 'pred': [final_label], 'threshold': threshold, 'inputs': inputs_map}
+        resp = {
+            'ok': True,
+            'pos_proba': [final_prob],
+            'pred': [final_label],
+            'threshold': threshold,
+            'inputs': inputs_map,
+            'shap': shap_data
+        }
         global last_result
         last_result = resp
         return jsonify(resp)
