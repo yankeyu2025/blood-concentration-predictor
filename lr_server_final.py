@@ -38,7 +38,7 @@ def get_texts():
             'prediction_result': 'Prediction Result',
             'prob_label': 'Positive probability',
             'risk_label': 'Risk level',
-            'footer': 'CLCR Prediction · XGBoost',
+            'footer': 'Lithium Concentration Prediction Tool (Research Use)',
             'feature_units': {
                 'height': 'Height (cm)',
                 'weight': 'Weight (kg)',
@@ -58,7 +58,7 @@ def get_texts():
             ],
             'explain_title': 'Model Interpretability (Waterfall)',
             'explain_note': 'Positive SHAP values increase the predicted probability of concentration ≥0.5, while negative values decrease it.',
-            'explain_unavailable': 'Interpretability data is unavailable for this prediction.'
+            'explain_unavailable': ''
         }
     return {
         'title': '碳酸锂血药浓度预测系统',
@@ -76,7 +76,7 @@ def get_texts():
         'prediction_result': '预测结果',
         'prob_label': '阳性概率',
         'risk_label': '风险等级',
-        'footer': 'CLCR 预测系统 · XGBoost',
+        'footer': '碳酸锂血药浓度预测系统（研究用途）',
         'feature_units': {
             'height': '身高（cm）',
             'weight': '体重（kg）',
@@ -95,7 +95,7 @@ def get_texts():
         ],
         'explain_title': '模型可解释性（瀑布图）',
         'explain_note': 'SHAP值为正表示该特征会提高“血药浓度≥0.5”的预测概率；为负则表示降低该概率。',
-        'explain_unavailable': '本次预测暂无法提供可解释性结果。'
+        'explain_unavailable': ''
     }
 
 
