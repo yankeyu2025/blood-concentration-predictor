@@ -23,6 +23,15 @@ document.addEventListener('DOMContentLoaded', () => {
     return (window.TEXTS && window.TEXTS.feature_units && window.TEXTS.feature_units[name]) || name;
   }
 
+  function showErrorState(message) {
+    const fallback = (window.TEXTS && window.TEXTS.error) || 'Error';
+    elRisk.textContent = message || fallback;
+    elRisk.classList.remove('ok');
+    elRisk.classList.add('bad');
+    resultCard.classList.remove('hidden');
+    if (explainCard) explainCard.classList.add('hidden');
+  }
+
   function renderWaterfall(shapData) {
     if (!elWaterfall) return;
     elWaterfall.innerHTML = '';
@@ -106,14 +115,24 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify(payload)
       });
 
-      const data = await resp.json();
+      let data = null;
+      try {
+        data = await resp.json();
+      } catch (parseError) {
+        throw new Error(`invalid response payload (${resp.status})`);
+      }
+
+      if (!resp.ok) {
+        throw new Error((data && data.error) || `request failed (${resp.status})`);
+      }
+
       if (!data.ok) {
-        const ERR = (window.TEXTS && window.TEXTS.error) || '错误';
-        elRisk.textContent = ERR;
-        elRisk.classList.remove('ok');
-        elRisk.classList.add('bad');
-        resultCard.classList.remove('hidden');
-        if (explainCard) explainCard.classList.add('hidden');
+        const missing = Array.isArray(data.missing) ? data.missing : [];
+        const missingLabel = (window.TEXTS && window.TEXTS.missing_fields_prefix) || 'Missing fields';
+        const errorMsg = missing.length > 0
+          ? `${missingLabel}: ${missing.map(toDisplayLabel).join(', ')}`
+          : (data.error || (window.TEXTS && window.TEXTS.error) || 'Error');
+        showErrorState(errorMsg);
         return;
       }
 
@@ -133,11 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
       resultCard.classList.remove('hidden');
       resultCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } catch (err) {
-      elRisk.textContent = (window.TEXTS && window.TEXTS.error) || '错误';
-      elRisk.classList.remove('ok');
-      elRisk.classList.add('bad');
-      resultCard.classList.remove('hidden');
-      if (explainCard) explainCard.classList.add('hidden');
+      showErrorState(err && err.message ? err.message : ((window.TEXTS && window.TEXTS.error) || 'Error'));
       console.error('预测失败：', err);
     }
   });
